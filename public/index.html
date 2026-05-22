@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartHome — Control de LEDs</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --border: #2d3a4f;
+      --ok: #22c55e;
+      --err: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-size: clamp(1.35rem, 4vw, 1.75rem);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+
+    .status-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      background: var(--card);
+      border: 1px solid var(--border);
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .status-bar.connected .status-dot {
+      background: var(--ok);
+      box-shadow: 0 0 8px var(--ok);
+    }
+
+    .status-bar.error .status-dot {
+      background: var(--err);
+      box-shadow: 0 0 8px var(--err);
+    }
+
+    .status-bar.connected {
+      color: var(--ok);
+    }
+
+    .status-bar.error {
+      color: var(--err);
+    }
+
+    .error-msg {
+      display: none;
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid var(--err);
+      border-radius: 8px;
+      color: #fca5a5;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .error-msg.visible {
+      display: block;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      text-transform: capitalize;
+    }
+
+    .indicator {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #4b5563;
+      border: 3px solid var(--border);
+      transition: background 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .indicator.on.rojo {
+      background: #ef4444;
+      box-shadow: 0 0 24px rgba(239, 68, 68, 0.6);
+    }
+
+    .indicator.on.verde {
+      background: #22c55e;
+      box-shadow: 0 0 24px rgba(34, 197, 94, 0.6);
+    }
+
+    .indicator.on.azul {
+      background: #3b82f6;
+      box-shadow: 0 0 24px rgba(59, 130, 246, 0.6);
+    }
+
+    .toggle-btn {
+      width: 100%;
+      max-width: 180px;
+      padding: 0.65rem 1rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #3b82f6;
+      color: #fff;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .toggle-btn:hover:not(:disabled) {
+      background: #2563eb;
+    }
+
+    .toggle-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .toggle-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .toggle-btn.on {
+      background: #64748b;
+    }
+
+    .toggle-btn.on:hover:not(:disabled) {
+      background: #475569;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>SmartHome — Control de LEDs</h1>
+      <div id="statusBar" class="status-bar">
+        <span class="status-dot"></span>
+        <span id="statusText">Conectando...</span>
+      </div>
+      <p id="errorMsg" class="error-msg" role="alert"></p>
+    </header>
+
+    <main class="cards" id="cardsContainer"></main>
+  </div>
+
+  <script>
+    const LEDS = [
+      { id: "rojo", label: "Rojo" },
+      { id: "verde", label: "Verde" },
+      { id: "azul", label: "Azul" },
+    ];
+
+    const estadoLocal = { rojo: "OFF", verde: "OFF", azul: "OFF" };
+
+    const statusBar = document.getElementById("statusBar");
+    const statusText = document.getElementById("statusText");
+    const errorMsg = document.getElementById("errorMsg");
+    const cardsContainer = document.getElementById("cardsContainer");
+
+    function setConexion(ok, mensajeError) {
+      statusBar.classList.remove("connected", "error");
+      if (ok) {
+        statusBar.classList.add("connected");
+        statusText.textContent = "Conectado";
+        errorMsg.classList.remove("visible");
+        errorMsg.textContent = "";
+      } else {
+        statusBar.classList.add("error");
+        statusText.textContent = "Error de conexión";
+        if (mensajeError) {
+          errorMsg.textContent = mensajeError;
+          errorMsg.classList.add("visible");
+        }
+      }
+    }
+
+    function actualizarUI(ledId) {
+      const estado = estadoLocal[ledId];
+      const encendido = estado === "ON";
+      const indicator = document.getElementById(`indicator-${ledId}`);
+      const btn = document.getElementById(`btn-${ledId}`);
+
+      indicator.classList.toggle("on", encendido);
+      btn.textContent = encendido ? "Apagar" : "Encender";
+      btn.classList.toggle("on", encendido);
+    }
+
+    function crearTarjetas() {
+      cardsContainer.innerHTML = LEDS.map(
+        (led) => `
+        <article class="card" data-led="${led.id}">
+          <h2>${led.label}</h2>
+          <div id="indicator-${led.id}" class="indicator ${led.id}" aria-hidden="true"></div>
+          <button type="button" id="btn-${led.id}" class="toggle-btn" data-led="${led.id}">
+            Encender
+          </button>
+        </article>
+      `
+      ).join("");
+
+      LEDS.forEach((led) => {
+        document.getElementById(`btn-${led.id}`).addEventListener("click", () => toggleLed(led.id));
+      });
+    }
+
+    async function cargarEstado() {
+      try {
+        const res = await fetch("/api/estado");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        LEDS.forEach((led) => {
+          if (data[led.id] === "ON" || data[led.id] === "OFF") {
+            estadoLocal[led.id] = data[led.id];
+          }
+        });
+        LEDS.forEach((led) => actualizarUI(led.id));
+        setConexion(true);
+      } catch (err) {
+        setConexion(false, "No se pudo cargar el estado: " + err.message);
+      }
+    }
+
+    async function toggleLed(ledId) {
+      const nuevoEstado = estadoLocal[ledId] === "ON" ? "OFF" : "ON";
+      const btn = document.getElementById(`btn-${ledId}`);
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/api/led", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ led: ledId, estado: nuevoEstado }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
+
+        estadoLocal[ledId] = data.estado;
+        actualizarUI(ledId);
+        setConexion(true);
+      } catch (err) {
+        setConexion(false, "Error al cambiar el LED: " + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    crearTarjetas();
+    cargarEstado();
+  </script>
+</body>
+</html>
