@@ -1,5 +1,7 @@
 const express = require("express");
 const mqtt = require("mqtt");
+const path = require("path");
+const fs = require("fs");
 
 const PORT = 3000;
 const MQTT_URL = "mqtt://localhost:1883";
@@ -13,8 +15,18 @@ const estadoLeds = {
 };
 
 const app = express();
+
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
 app.use(express.json());
-app.use(express.static("public"));
 
 const mqttClient = mqtt.connect(MQTT_URL);
 
@@ -73,6 +85,22 @@ app.get("/api/estado", (_req, res) => {
   console.log("[API] GET /api/estado —", estadoLeds);
   res.json({ ...estadoLeds });
 });
+
+const distPath = path.join(__dirname, "smarthome-frontend", "dist");
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+  console.log("[HTTP] Sirviendo frontend desde smarthome-frontend/dist");
+} else {
+  console.log(
+    "[HTTP] Frontend no compilado. Desarrollo: cd smarthome-frontend && npm run dev | Producción: npm run build"
+  );
+}
 
 app.listen(PORT, () => {
   console.log(`[HTTP] Servidor escuchando en http://localhost:${PORT}`);
