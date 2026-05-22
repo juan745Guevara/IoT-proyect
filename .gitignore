@@ -1,16 +1,12 @@
 # Dependencias
 node_modules/
 
-# Frontend React (Vite)
-smarthome-frontend/node_modules/
-smarthome-frontend/dist/
 
 # Variables de entorno (no subir secretos ni IPs de producción)
 .env
 .env.local
 .env.*.local
-smarthome-frontend/.env
-smarthome-frontend/.env.production
+
 
 # Sistema
 .DS_Store
