@@ -3,15 +3,11 @@
  * Recibe datos y eventos por props; no conoce la API.
  */
 
-const ETIQUETAS = {
-  rojo: "Rojo",
-  verde: "Verde",
-  azul: "Azul",
-};
+import { LED_LABELS, LED_STATE } from "../constants/leds.js";
 
 export default function LedCard({ nombre, estado, cargando, onToggle }) {
-  const encendido = estado === "ON";
-  const etiqueta = ETIQUETAS[nombre] || nombre;
+  const encendido = estado === LED_STATE.ON;
+  const etiqueta = LED_LABELS[nombre] || nombre;
 
   return (
     <article className="led-card" data-led={nombre}>

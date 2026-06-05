@@ -3,12 +3,11 @@
  * Orquesta datos y los pasa a componentes visuales.
  */
 
+import { LED_NAMES } from "../constants/leds.js";
 import { useLeds } from "../hooks/useLeds.js";
 import { useConexion } from "../hooks/useConexion.js";
 import StatusBar from "./StatusBar.jsx";
 import LedCard from "./LedCard.jsx";
-
-const LEDS = ["rojo", "verde", "azul"];
 
 export default function Dashboard() {
   const { leds, cargando, ledCargando, error, toggleLed } = useLeds();
@@ -27,7 +26,7 @@ export default function Dashboard() {
       </header>
 
       <main className="cards">
-        {LEDS.map((nombre) => (
+        {LED_NAMES.map((nombre) => (
           <LedCard
             key={nombre}
             nombre={nombre}

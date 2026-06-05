@@ -5,11 +5,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getLeds, toggleLed as apiToggleLed } from "../api/client.js";
-
-const ESTADO_INICIAL = { rojo: "OFF", verde: "OFF", azul: "OFF" };
+import { INITIAL_LED_STATE, LED_STATE } from "../constants/leds.js";
 
 export function useLeds() {
-  const [leds, setLeds] = useState(ESTADO_INICIAL);
+  const [leds, setLeds] = useState(INITIAL_LED_STATE);
   const [cargando, setCargando] = useState(false);
   const [ledCargando, setLedCargando] = useState(null);
   const [error, setError] = useState(null);
@@ -20,9 +19,9 @@ export function useLeds() {
     try {
       const data = await getLeds();
       setLeds({
-        rojo: data.rojo ?? "OFF",
-        verde: data.verde ?? "OFF",
-        azul: data.azul ?? "OFF",
+        rojo: data.rojo ?? LED_STATE.OFF,
+        verde: data.verde ?? LED_STATE.OFF,
+        azul: data.azul ?? LED_STATE.OFF,
       });
     } catch (err) {
       setError(err.message);
@@ -37,7 +36,8 @@ export function useLeds() {
 
   const toggleLed = useCallback(
     async (led) => {
-      const nuevoEstado = leds[led] === "ON" ? "OFF" : "ON";
+      const nuevoEstado =
+        leds[led] === LED_STATE.ON ? LED_STATE.OFF : LED_STATE.ON;
       setLedCargando(led);
       setError(null);
       try {

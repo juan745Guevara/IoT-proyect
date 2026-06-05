@@ -1,6 +1,9 @@
 # Dependencias
 node_modules/
 
+# Build del frontend
+smarthome-frontend/dist/
+
 
 # Variables de entorno (no subir secretos ni IPs de producción)
 .env
