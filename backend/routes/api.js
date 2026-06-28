@@ -1,44 +1,48 @@
 const express = require("express");
-const { LEDS_VALIDOS, ESTADOS_VALIDOS } = require("../config");
-const { getEstado, setLed } = require("../state/leds");
-const { publicarLed } = require("../mqtt/client");
+const { ACTUADORES_VALIDOS, ESTADOS_VALIDOS } = require("../config");
+const { getSensores, getActuadores, setActuador } = require("../state/invernadero");
+const { publicarComando } = require("../mqtt/client");
 
 const router = express.Router();
 
-router.post("/led", (req, res) => {
-  const { led, estado } = req.body;
+router.get("/sensores", (_req, res) => {
+  const sensores = getSensores();
+  console.log("[API] GET /api/sensores —", sensores);
+  res.json(sensores);
+});
 
-  console.log("[API] POST /api/led — body:", req.body);
+router.get("/actuadores", (_req, res) => {
+  const actuadores = getActuadores();
+  console.log("[API] GET /api/actuadores —", actuadores);
+  res.json(actuadores);
+});
 
-  if (!led || !LEDS_VALIDOS.includes(led)) {
-    console.log("[API] LED no válido:", led);
-    return res.status(400).json({ ok: false, error: "LED no válido" });
+router.post("/actuador", (req, res) => {
+  const { actuador, estado } = req.body;
+
+  console.log("[API] POST /api/actuador — body:", req.body);
+
+  if (!actuador || !ACTUADORES_VALIDOS.includes(actuador)) {
+    console.log("[API] Actuador no válido:", actuador);
+    return res.status(400).json({ error: "Actuador inválido" });
   }
 
   if (!estado || !ESTADOS_VALIDOS.includes(estado)) {
     console.log("[API] Estado no válido:", estado);
-    return res.status(400).json({ ok: false, error: "Estado no válido" });
+    return res.status(400).json({ error: "Estado inválido" });
   }
 
-  const payload = JSON.stringify({ estado });
-
-  publicarLed(led, payload, (err) => {
+  publicarComando(actuador, estado, (err) => {
     if (err) {
       console.error("[MQTT] Error al publicar:", err.message);
-      return res.status(500).json({ ok: false, error: "Error al publicar en MQTT" });
+      return res.status(500).json({ error: "Error al publicar en MQTT" });
     }
 
-    setLed(led, estado);
-    console.log("[MQTT] Publicado smarthome/led/" + led, "→", payload);
-    console.log("[API] Estado actualizado en memoria:", getEstado());
-    res.json({ ok: true, led, estado });
+    setActuador(actuador, estado);
+    console.log("[MQTT] Publicado invernadero/actuadores →", { actuador, estado });
+    console.log("[API] Estado actualizado en memoria:", getActuadores());
+    res.json({ ok: true, actuador, estado });
   });
-});
-
-router.get("/estado", (_req, res) => {
-  const estado = getEstado();
-  console.log("[API] GET /api/estado —", estado);
-  res.json(estado);
 });
 
 module.exports = router;

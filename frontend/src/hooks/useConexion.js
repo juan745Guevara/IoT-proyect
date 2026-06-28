@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { getLeds } from "../api/client.js";
+import { getSensores } from "../api/client.js";
 
 const INTERVALO_MS = 5000;
 
@@ -17,7 +17,7 @@ export function useConexion() {
 
     async function verificar() {
       try {
-        await getLeds();
+        await getSensores();
         if (activo) setConectado(true);
       } catch {
         if (activo) setConectado(false);

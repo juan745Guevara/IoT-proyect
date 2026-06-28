@@ -1,9 +1,22 @@
 :root {
-  --bg: #0f1419;
-  --card: #1a2332;
-  --text: #e7ecf3;
-  --muted: #8b9cb3;
-  --border: #2d3a4f;
-  --ok: #22c55e;
-  --err: #ef4444;
+  --color-bg: #0f1a12;
+  --color-surface: #1a2e1e;
+  --color-border: #2d4a32;
+  --color-primary: #4caf50;
+  --color-accent: #81c784;
+  --color-warning: #ffb74d;
+  --color-danger: #ef5350;
+  --color-text: #e8f5e9;
+  --color-text-muted: #a5d6a7;
+  --color-on: #4caf50;
+  --color-off: #455a40;
+
+  /* Alias para compatibilidad con base.css */
+  --bg: var(--color-bg);
+  --card: var(--color-surface);
+  --text: var(--color-text);
+  --muted: var(--color-text-muted);
+  --border: var(--color-border);
+  --ok: var(--color-on);
+  --err: var(--color-danger);
 }

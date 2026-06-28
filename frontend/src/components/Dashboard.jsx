@@ -3,39 +3,63 @@
  * Orquesta datos y los pasa a componentes visuales.
  */
 
-import { LED_NAMES } from "../constants/leds.js";
-import { useLeds } from "../hooks/useLeds.js";
+import { SENSORES, ACTUADORES } from "../constants/invernadero.js";
+import { useSensores } from "../hooks/useSensores.js";
+import { useActuadores } from "../hooks/useActuadores.js";
 import { useConexion } from "../hooks/useConexion.js";
 import StatusBar from "./StatusBar.jsx";
-import LedCard from "./LedCard.jsx";
+import SensorCard from "./SensorCard.jsx";
+import ActuadorCard from "./ActuadorCard.jsx";
 
 export default function Dashboard() {
-  const { leds, cargando, ledCargando, error, toggleLed } = useLeds();
+  const { sensores, ultimaLectura, loading: sensoresLoading, error: sensoresError } = useSensores();
+  const { actuadores, toggleActuador, loading: actuadoresLoading } = useActuadores();
   const { conectado, verificando } = useConexion();
 
   return (
     <div className="dashboard">
       <header>
-        <h1>SmartHome — Control de LEDs</h1>
-        <StatusBar conectado={conectado} verificando={verificando} />
-        {error && (
+        <h1>Invernadero Inteligente</h1>
+        <StatusBar
+          conectado={conectado}
+          verificando={verificando}
+          ultimaLectura={ultimaLectura}
+        />
+        {sensoresError && (
           <p className="error-banner" role="alert">
-            {error}
+            {sensoresError}
           </p>
         )}
       </header>
 
-      <main className="cards">
-        {LED_NAMES.map((nombre) => (
-          <LedCard
-            key={nombre}
-            nombre={nombre}
-            estado={leds[nombre]}
-            cargando={ledCargando === nombre || (cargando && ledCargando === null)}
-            onToggle={() => toggleLed(nombre)}
-          />
-        ))}
-      </main>
+      <section className="seccion-sensores">
+        <h2 className="seccion-titulo">Sensores</h2>
+        <div className="sensores-grid">
+          {SENSORES.map((sensor) => (
+            <SensorCard
+              key={sensor.id}
+              sensor={sensor}
+              valor={sensores[sensor.id]}
+            />
+          ))}
+        </div>
+        {sensoresLoading && <p className="cargando-texto">Cargando sensores...</p>}
+      </section>
+
+      <section className="seccion-actuadores">
+        <h2 className="seccion-titulo">Actuadores</h2>
+        <div className="actuadores-grid">
+          {ACTUADORES.map((actuador) => (
+            <ActuadorCard
+              key={actuador.id}
+              actuador={actuador}
+              estado={actuadores[actuador.id]}
+              loading={actuadoresLoading}
+              onToggle={(nuevoEstado) => toggleActuador(actuador.id, nuevoEstado)}
+            />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
