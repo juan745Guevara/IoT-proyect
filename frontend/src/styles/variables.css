@@ -1,22 +1,57 @@
 :root {
-  --color-bg: #0f1a12;
-  --color-surface: #1a2e1e;
-  --color-border: #2d4a32;
-  --color-primary: #4caf50;
-  --color-accent: #81c784;
-  --color-warning: #ffb74d;
-  --color-danger: #ef5350;
-  --color-text: #e8f5e9;
-  --color-text-muted: #a5d6a7;
-  --color-on: #4caf50;
-  --color-off: #455a40;
+  /* Paleta invernadero */
+  --gh-green-dark: #3b6d11;
+  --gh-green-mid: #639922;
+  --gh-green-light: #97c459;
+  --gh-green-bg: #eaf3de;
+  --gh-blue-dark: #185fa5;
+  --gh-blue-mid: #378add;
+  --gh-blue-light: #85b7eb;
+  --gh-blue-bg: #e6f1fb;
+  --gh-amber-dark: #854f0b;
+  --gh-amber-mid: #ef9f27;
+  --gh-amber-bg: #faeeda;
+  --gh-purple-dark: #3c3489;
+  --gh-purple-mid: #534ab7;
+  --gh-purple-bg: #eeedfe;
 
-  /* Alias para compatibilidad con base.css */
-  --bg: var(--color-bg);
-  --card: var(--color-surface);
-  --text: var(--color-text);
-  --muted: var(--color-text-muted);
-  --border: var(--color-border);
-  --ok: var(--color-on);
-  --err: var(--color-danger);
+  /* Sistema — light */
+  --surface-1: #fafaf8;
+  --surface-2: #f5f4f0;
+  --border: #e8e6e1;
+  --border-strong: #d4d2cc;
+  --text-primary: #1a1a18;
+  --text-muted: #888780;
+
+  --bg: var(--surface-2);
+  --text: var(--text-primary);
+  --card: var(--surface-1);
+  --muted: var(--text-muted);
+  --ok: var(--gh-green-mid);
+  --err: #ef5350;
+
+  /* Legacy aliases */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface-1);
+  --color-border: var(--border);
+  --color-primary: var(--gh-green-mid);
+  --color-accent: var(--gh-green-light);
+  --color-warning: var(--gh-amber-mid);
+  --color-danger: var(--err);
+  --color-text: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-on: var(--gh-green-mid);
+  --color-off: #888780;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-1: #1e1e1c;
+    --surface-2: #141412;
+    --border: #2e2e2a;
+    --border-strong: #3d3d38;
+    --text-primary: #f1efe8;
+    --text-muted: #b4b2a9;
+    --bg: var(--surface-2);
+  }
 }

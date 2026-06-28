@@ -1,6 +1,5 @@
 /**
- * Tarjeta visual de un actuador — solo UI.
- * Recibe datos y eventos por props; no conoce la API.
+ * Tarjeta de control de actuador con toggle switch.
  */
 
 import { ESTADO } from "../constants/invernadero.js";
@@ -8,32 +7,27 @@ import { ESTADO } from "../constants/invernadero.js";
 export default function ActuadorCard({ actuador, estado, onToggle, loading }) {
   const encendido = estado === ESTADO.ON;
 
+  function handleToggle() {
+    if (loading) return;
+    const nuevoEstado = encendido ? ESTADO.OFF : ESTADO.ON;
+    onToggle(actuador.id, nuevoEstado);
+  }
+
   return (
-    <article className={`actuador-card ${encendido ? "on" : "off"}`} data-actuador={actuador.id}>
-      <span className="actuador-icono" aria-hidden="true">
-        {actuador.icono}
-      </span>
-      <h2 className="actuador-label">{actuador.label}</h2>
-      <div
-        className={`actuador-indicador ${encendido ? "activo" : ""}`}
-        aria-label={encendido ? "Encendido" : "Apagado"}
-      >
-        <span className="actuador-estado-texto">{encendido ? "ON" : "OFF"}</span>
+    <article className="card actuador-control-card" data-actuador={actuador.id}>
+      <i className={`ti ${actuador.icono} actuador-control-icon`} aria-hidden="true" />
+      <div className="actuador-control-info">
+        <span className="actuador-control-name">{actuador.label}</span>
+        <span className={`actuador-badge ${encendido ? "on" : "off"}`}>{encendido ? "ON" : "OFF"}</span>
       </div>
       <button
         type="button"
-        className={`toggle-btn ${encendido ? "on" : ""}`}
-        onClick={() => onToggle(encendido ? ESTADO.OFF : ESTADO.ON)}
+        className={`toggle ${encendido ? "on" : "off"}`}
+        onClick={handleToggle}
         disabled={loading}
-      >
-        {loading ? (
-          <span className="spinner" aria-hidden="true" />
-        ) : encendido ? (
-          "Apagar"
-        ) : (
-          "Encender"
-        )}
-      </button>
+        aria-label={`${encendido ? "Apagar" : "Encender"} ${actuador.label}`}
+        aria-pressed={encendido}
+      />
     </article>
   );
 }

@@ -1,48 +1,50 @@
 /**
- * Barra de estado de conexión — solo presentación.
- * No realiza peticiones HTTP.
+ * TopBar — conexión ESP32 y tiempo relativo desde última lectura.
  */
 
-function formatearFecha(iso) {
-  if (!iso) return null;
-  try {
-    return new Date(iso).toLocaleString("es-ES", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  } catch {
-    return null;
-  }
+import { useState, useEffect } from "react";
+
+function tiempoRelativo(iso) {
+  if (!iso) return "sin datos";
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 0) return "ahora";
+  if (diff < 5) return "ahora";
+  if (diff < 60) return `hace ${diff}s`;
+  const min = Math.floor(diff / 60);
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.floor(min / 60);
+  return `hace ${h} h`;
 }
 
-export default function StatusBar({ conectado, verificando, ultimaLectura }) {
-  const clase = verificando ? "" : conectado ? "connected" : "error";
-  const textoConexion = verificando
-    ? "Verificando..."
-    : conectado
-      ? "Backend conectado"
-      : "Sin conexión al backend";
+function esp32Conectado(iso) {
+  if (!iso) return false;
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  return diff >= 0 && diff < 15;
+}
 
-  const fechaFormateada = formatearFecha(ultimaLectura);
+export default function StatusBar({ ultimaLectura }) {
+  const [, tick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => tick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const conectado = esp32Conectado(ultimaLectura);
+  const relativo = tiempoRelativo(ultimaLectura);
 
   return (
-    <div className="status-bar-container">
-      <div className={`status-bar ${clase}`} role="status">
-        <span className="status-dot" aria-hidden="true" />
-        <span>{textoConexion}</span>
+    <header className="top-bar">
+      <div className="top-bar-left">
+        <span className="top-bar-dot" aria-hidden="true" />
+        <h1 className="top-bar-title">Invernadero IoT</h1>
       </div>
-      {fechaFormateada && (
-        <p className="ultima-lectura">
-          Última lectura ESP32: <time dateTime={ultimaLectura}>{fechaFormateada}</time>
-        </p>
-      )}
-      {!fechaFormateada && !verificando && conectado && (
-        <p className="ultima-lectura sin-datos">Esperando datos del ESP32...</p>
-      )}
-    </div>
+      <div className="top-bar-right">
+        <span className={`esp32-badge ${conectado ? "ok" : "err"}`}>
+          {conectado ? "ESP32 conectado" : "ESP32 sin señal"}
+        </span>
+        <span className="top-bar-time">última lectura: {relativo}</span>
+      </div>
+    </header>
   );
 }

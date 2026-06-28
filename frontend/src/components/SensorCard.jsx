@@ -1,46 +1,32 @@
 /**
- * Tarjeta visual de un sensor — solo UI.
- * Recibe datos por props; no conoce la API.
+ * Tarjeta de detalle de sensor — solo UI.
  */
 
-const SENSORES_CON_BARRA = ["humedad_aire", "humedad_suelo", "luminosidad"];
+export default function SensorCard({ id, label, valor, unidad, icono, color, max = 100 }) {
+  const sinSenal = valor === null || valor === undefined;
+  const display = sinSenal
+    ? "—"
+    : id === "temperatura"
+      ? valor.toFixed(1)
+      : String(Math.round(valor));
 
-function colorTemperatura(valor) {
-  if (valor === null) return "sin-senal";
-  if (valor < 18) return "frio";
-  if (valor <= 28) return "normal";
-  return "caliente";
-}
-
-export default function SensorCard({ sensor, valor }) {
-  const sinSenal = valor === null;
-  const mostrarBarra = SENSORES_CON_BARRA.includes(sensor.id);
-  const tempClass = sensor.id === "temperatura" ? colorTemperatura(valor) : "";
+  const pct = sinSenal ? 0 : Math.min(100, Math.max(0, (valor / max) * 100));
 
   return (
-    <article className={`sensor-card ${tempClass}`} data-sensor={sensor.id}>
-      <span className="sensor-icono" aria-hidden="true">
-        {sensor.icono}
-      </span>
-      <div className="sensor-valor">
-        {sinSenal ? (
-          <span className="sin-senal-texto">—</span>
-        ) : (
-          <>
-            <span className="valor-numero">
-              {typeof valor === "number" ? valor.toFixed(sensor.id === "temperatura" ? 1 : 0) : valor}
-            </span>
-            <span className="valor-unidad">{sensor.unidad}</span>
-          </>
-        )}
-      </div>
-      {sinSenal && <span className="sensor-estado">sin señal</span>}
-      {mostrarBarra && !sinSenal && (
-        <div className="sensor-barra" role="progressbar" aria-valuenow={valor} aria-valuemin={0} aria-valuemax={100}>
-          <div className="sensor-barra-fill" style={{ width: `${Math.min(100, Math.max(0, valor))}%` }} />
+    <article className="card sensor-detail-card" data-sensor={id}>
+      <div className="sensor-detail-row">
+        <i className={`ti ${icono} sensor-detail-icon`} aria-hidden="true" />
+        <div className="sensor-detail-body">
+          <span className="sensor-detail-label">{label}</span>
+          <div className="sensor-detail-value">
+            <span className="sensor-detail-num">{display}</span>
+            {!sinSenal && <span className="sensor-detail-unit">{unidad}</span>}
+          </div>
         </div>
-      )}
-      <h2 className="sensor-label">{sensor.label}</h2>
+      </div>
+      <div className="bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+        <div className="bar-fill" style={{ width: `${pct.toFixed(0)}%`, background: color }} />
+      </div>
     </article>
   );
 }
