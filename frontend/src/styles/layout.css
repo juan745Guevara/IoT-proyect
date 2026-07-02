@@ -19,6 +19,12 @@
   overflow-y: auto;
 }
 
+.mobile-top-bar {
+  display: none;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
 .sidebar-logo {
   display: flex;
   align-items: center;
@@ -147,6 +153,10 @@
 @media (max-width: 768px) {
   .sidebar {
     display: none;
+  }
+
+  .mobile-top-bar {
+    display: flex;
   }
 
   .main-content {

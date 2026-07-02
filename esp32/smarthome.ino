@@ -5,17 +5,28 @@
 #include <PubSubClient.h>
 #include <DHT.h>
 
+#include <esp_task_wdt.h>
+
 // ── Constantes ──────────────────────────────────────────────────────────────
 const char* AP_SSID = "Invernadero-Config";
 const char* AP_PASSWORD = "";
 const IPAddress AP_IP(192, 168, 4, 1);
 
+const char* ZONA_ID = "zona1";  // Cambiar por zona antes de flashear
+
 const char* MQTT_SERVER = "TU_IP_EC2"; // editar antes de flashear
 const int MQTT_PORT = 1883;
 const char* MQTT_CLIENT_ID = "esp32-invernadero";
 
-const char* TOPIC_SENSORES = "invernadero/sensores";
-const char* TOPIC_ACTUADORES = "invernadero/actuadores";
+char TOPIC_SENSORES[48];
+char TOPIC_ACTUADORES[52];
+char TOPIC_HEARTBEAT[52];
+
+void initTopics() {
+  snprintf(TOPIC_SENSORES, sizeof(TOPIC_SENSORES), "invernadero/%s/sensores", ZONA_ID);
+  snprintf(TOPIC_ACTUADORES, sizeof(TOPIC_ACTUADORES), "invernadero/%s/actuadores", ZONA_ID);
+  snprintf(TOPIC_HEARTBEAT, sizeof(TOPIC_HEARTBEAT), "invernadero/%s/heartbeat", ZONA_ID);
+}
 
 const int DHTPIN = 4;
 const int SOIL_PIN = 34;
@@ -26,9 +37,12 @@ const int RESET_PIN = 0;
 
 #define DHTTYPE DHT22
 const unsigned long INTERVALO_LECTURA = 5000;
+const unsigned long INTERVALO_HEARTBEAT = 30000;
 const unsigned long WIFI_TIMEOUT_MS = 10000;
-const unsigned long MQTT_RECONNECT_MS = 5000;
 const unsigned long WIFI_RECONNECT_MS = 5000;
+const unsigned long MQTT_RETRY_INICIAL_MS = 5000;
+const unsigned long MQTT_RETRY_MAX_MS = 60000;
+const int WDT_TIMEOUT_SEG = 30;
 
 // ── Objetos globales ────────────────────────────────────────────────────────
 Preferences preferences;
@@ -42,8 +56,10 @@ String wifiPassword = "";
 bool modoAP = false;
 
 unsigned long lastMqttReconnectAttempt = 0;
+unsigned long mqttRetryDelay = MQTT_RETRY_INICIAL_MS;
 unsigned long lastWifiReconnectAttempt = 0;
 unsigned long lastSensorRead = 0;
+unsigned long lastHeartbeat = 0;
 
 // ── Sensores y actuadores ─────────────────────────────────────────────────────
 
@@ -96,6 +112,21 @@ void publicarSensores() {
   }
 }
 
+void publicarHeartbeat() {
+  StaticJsonDocument<96> doc;
+  doc["zona"] = ZONA_ID;
+  doc["uptime_ms"] = millis();
+
+  char buffer[96];
+  serializeJson(doc, buffer);
+
+  if (mqtt.publish(TOPIC_HEARTBEAT, buffer)) {
+    Serial.printf("[MQTT] Heartbeat → %s\n", buffer);
+  } else {
+    Serial.println("[MQTT] Error al publicar heartbeat");
+  }
+}
+
 void callbackMQTT(char* topic, byte* payload, unsigned int length) {
   StaticJsonDocument<128> doc;
   DeserializationError error = deserializeJson(doc, payload, length);
@@ -131,7 +162,7 @@ void conectarMQTT() {
   }
 
   unsigned long now = millis();
-  if (now - lastMqttReconnectAttempt < MQTT_RECONNECT_MS) {
+  if (now - lastMqttReconnectAttempt < mqttRetryDelay) {
     return;
   }
   lastMqttReconnectAttempt = now;
@@ -142,13 +173,16 @@ void conectarMQTT() {
   Serial.println(MQTT_PORT);
 
   if (mqtt.connect(MQTT_CLIENT_ID)) {
-    Serial.println("[MQTT] Conectado y suscrito a invernadero/actuadores");
+    Serial.print("[MQTT] Conectado. Suscrito a ");
+    Serial.println(TOPIC_ACTUADORES);
     mqtt.subscribe(TOPIC_ACTUADORES);
+    mqttRetryDelay = MQTT_RETRY_INICIAL_MS;
+    lastHeartbeat = 0;
     return;
   }
 
-  Serial.print("[MQTT] Falló, rc=");
-  Serial.println(mqtt.state());
+  Serial.printf("[MQTT] Falló, rc=%d. Reintentando en %lums\n", mqtt.state(), mqttRetryDelay);
+  mqttRetryDelay = min(mqttRetryDelay * 2, MQTT_RETRY_MAX_MS);
 }
 
 // ── NVS (credenciales WiFi) ─────────────────────────────────────────────────
@@ -427,6 +461,7 @@ void iniciarModoStation() {
   dht.begin();
   conectarMQTT();
   lastSensorRead = 0;
+  lastHeartbeat = 0;
 }
 
 // ── Setup y loop ──────────────────────────────────────────────────────────────
@@ -435,6 +470,11 @@ void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println("\n[Invernadero] Iniciando ESP32...");
+  initTopics();
+
+  esp_task_wdt_init(WDT_TIMEOUT_SEG, true);
+  esp_task_wdt_add(NULL);
+  Serial.printf("[WDT] Watchdog activo (%ds)\n", WDT_TIMEOUT_SEG);
 
   pinMode(RELAY_VENTILADOR, OUTPUT);
   pinMode(RELAY_BOMBA, OUTPUT);
@@ -465,6 +505,8 @@ void setup() {
 }
 
 void loop() {
+  esp_task_wdt_reset();
+
   if (modoAP) {
     server.handleClient();
     return;
@@ -494,5 +536,10 @@ void loop() {
   if (mqtt.connected() && now - lastSensorRead >= INTERVALO_LECTURA) {
     lastSensorRead = now;
     publicarSensores();
+  }
+
+  if (mqtt.connected() && now - lastHeartbeat >= INTERVALO_HEARTBEAT) {
+    lastHeartbeat = now;
+    publicarHeartbeat();
   }
 }

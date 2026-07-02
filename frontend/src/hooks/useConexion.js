@@ -1,37 +1,35 @@
 /**
- * Hook que comprueba si el servidor responde.
- * Sin JSX — reutilizable en React Native.
+ * Hook de conexión basado en Socket.io.
  */
 
 import { useState, useEffect } from "react";
-import { getSensores } from "../api/client.js";
-
-const INTERVALO_MS = 5000;
+import socket from "../socket.js";
 
 export function useConexion() {
-  const [conectado, setConectado] = useState(false);
-  const [verificando, setVerificando] = useState(true);
+  const [conectado, setConectado] = useState(socket.connected);
+  const [verificando, setVerificando] = useState(!socket.connected);
 
   useEffect(() => {
-    let activo = true;
-
-    async function verificar() {
-      try {
-        await getSensores();
-        if (activo) setConectado(true);
-      } catch {
-        if (activo) setConectado(false);
-      } finally {
-        if (activo) setVerificando(false);
-      }
+    function onConnect() {
+      setConectado(true);
+      setVerificando(false);
     }
 
-    verificar();
-    const id = setInterval(verificar, INTERVALO_MS);
+    function onDisconnect() {
+      setConectado(false);
+      setVerificando(false);
+    }
+
+    if (socket.connected) {
+      onConnect();
+    }
+
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
 
     return () => {
-      activo = false;
-      clearInterval(id);
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
     };
   }, []);
 

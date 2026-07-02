@@ -1,40 +1,58 @@
-/**
- * Hook de control de actuadores (ventilador, bomba).
- * Sin JSX — reutilizable en React Native copiando este archivo.
- */
-
 import { useState, useEffect, useCallback } from "react";
 import { getActuadores, toggleActuador as apiToggleActuador } from "../api/client.js";
 import { ESTADO_INICIAL_ACTUADORES, ESTADO } from "../constants/invernadero.js";
+import socket from "../socket.js";
+import { useZonaActiva } from "../context/ZonaContext.jsx";
+
+function mapActuadores(data) {
+  return {
+    ventilador: data.ventilador ?? ESTADO.OFF,
+    bomba: data.bomba ?? ESTADO.OFF,
+  };
+}
 
 export function useActuadores() {
+  const { zonaId } = useZonaActiva();
   const [actuadores, setActuadores] = useState(ESTADO_INICIAL_ACTUADORES);
   const [loading, setLoading] = useState(false);
 
+  const onActuadores = useCallback(
+    (payload) => {
+      if (payload.zona_id && payload.zona_id !== zonaId) {
+        return;
+      }
+      const data = payload.datos ?? payload;
+      setActuadores(mapActuadores(data));
+    },
+    [zonaId]
+  );
+
   useEffect(() => {
-    async function cargar() {
+    async function cargarInicial() {
       try {
-        const data = await getActuadores();
-        setActuadores({
-          ventilador: data.ventilador ?? ESTADO.OFF,
-          bomba: data.bomba ?? ESTADO.OFF,
-        });
+        const data = await getActuadores(zonaId);
+        onActuadores(data);
       } catch {
-        // Estado inicial se mantiene si el backend no responde
+        // mantener estado inicial
       }
     }
-    cargar();
-  }, []);
 
-  const toggleActuador = useCallback(async (id, nuevoEstado) => {
-    setLoading(true);
-    try {
-      const data = await apiToggleActuador(id, nuevoEstado);
-      setActuadores((prev) => ({ ...prev, [id]: data.estado }));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    cargarInicial();
+    socket.on("actuadores", onActuadores);
+    return () => socket.off("actuadores", onActuadores);
+  }, [zonaId, onActuadores]);
 
-  return { actuadores, toggleActuador, loading };
+  const toggleActuador = useCallback(
+    async (id, nuevoEstado) => {
+      setLoading(true);
+      try {
+        await apiToggleActuador(id, nuevoEstado, zonaId);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [zonaId]
+  );
+
+  return { actuadores, toggleActuador, loading, zonaId };
 }

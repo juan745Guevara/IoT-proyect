@@ -1,4 +1,6 @@
 import { NavLink } from "react-router-dom";
+import ThemeToggle from "../common/ThemeToggle.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const navItems = [
   { to: "/", icon: "ti-layout-dashboard", label: "Dashboard" },
@@ -7,11 +9,13 @@ const navItems = [
 ];
 
 const controlItems = [
-  { to: "/configuracion", icon: "ti-adjustments-horizontal", label: "Umbrales" },
+  { to: "/configuracion", icon: "ti-adjustments-horizontal", label: "Automático" },
   { to: "/estado", icon: "ti-cpu", label: "Estado ESP32" },
 ];
 
 export default function Sidebar({ conectado }) {
+  const { user, logout, isAdmin } = useAuth();
+
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
@@ -42,6 +46,28 @@ export default function Sidebar({ conectado }) {
           {item.label}
         </NavLink>
       ))}
+
+      {isAdmin && (
+        <NavLink
+          to="/admin"
+          className={({ isActive }) => `sidebar-item ${isActive ? "active" : ""}`}
+        >
+          <i className="ti ti-shield-lock" aria-hidden="true" />
+          Administración
+        </NavLink>
+      )}
+
+      <div className="sidebar-footer">
+        <div className="sidebar-user">
+          <span className="sidebar-user-name">{user?.usuario}</span>
+          <span className="sidebar-user-rol">{user?.rol}</span>
+        </div>
+        <button type="button" className="sidebar-logout" onClick={logout}>
+          <i className="ti ti-logout" aria-hidden="true" />
+          Salir
+        </button>
+        <ThemeToggle />
+      </div>
     </aside>
   );
 }

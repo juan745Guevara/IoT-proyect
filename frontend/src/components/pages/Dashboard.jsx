@@ -1,19 +1,37 @@
 import { useSensores } from "../../hooks/useSensores.js";
 import { useActuadores } from "../../hooks/useActuadores.js";
+import { useUmbrales } from "../../hooks/useUmbrales.js";
+import { useAutomatico } from "../../hooks/useAutomatico.js";
+import { useAuth } from "../../context/AuthContext.jsx";
 import GreenhouseView from "./GreenhouseView.jsx";
 import SensorCard from "../common/SensorCard.jsx";
 import ActuadorCard from "../common/ActuadorCard.jsx";
 import AlertBar from "../common/AlertBar.jsx";
+import AnomalyBanner from "../common/AnomalyBanner.jsx";
 import StatusBar from "../common/StatusBar.jsx";
 
+import ZonaSelector from "../common/ZonaSelector.jsx";
+
 export default function Dashboard() {
+  const { isAdmin } = useAuth();
   const { sensores, ultimaLectura } = useSensores();
   const { actuadores, toggleActuador } = useActuadores();
+  const { umbrales } = useUmbrales();
+  const { config: autoConfig } = useAutomatico();
 
   return (
     <div className="dashboard">
+      <div className="page-head-row">
+        <ZonaSelector />
+      </div>
       <StatusBar ultimaLectura={ultimaLectura} />
-      <AlertBar sensores={sensores} />
+      {!isAdmin && (
+        <p className="readonly-banner">
+          <i className="ti ti-eye" aria-hidden="true" /> Modo solo lectura — no puedes controlar actuadores
+        </p>
+      )}
+      <AlertBar sensores={sensores} umbrales={umbrales} />
+      <AnomalyBanner />
       <GreenhouseView sensores={sensores} actuadores={actuadores} />
 
       <h2 className="sec-label">Lecturas en detalle</h2>
@@ -55,14 +73,18 @@ export default function Dashboard() {
       <h2 className="sec-label">Control de actuadores</h2>
       <div className="act-grid">
         <ActuadorCard
-          actuador={{ id: "ventilador", label: "Ventilador", icono: "ti-wind" }}
+          actuador={{ id: "ventilador", label: "Ventilación", icono: "ti-wind" }}
           estado={actuadores?.ventilador}
           onToggle={toggleActuador}
+          modoAutomatico={autoConfig?.ventilador?.modo === "automatico"}
+          readOnly={!isAdmin}
         />
         <ActuadorCard
-          actuador={{ id: "bomba", label: "Bomba de agua", icono: "ti-ripple" }}
+          actuador={{ id: "bomba", label: "Riego", icono: "ti-ripple" }}
           estado={actuadores?.bomba}
           onToggle={toggleActuador}
+          modoAutomatico={autoConfig?.bomba?.modo === "automatico"}
+          readOnly={!isAdmin}
         />
       </div>
     </div>

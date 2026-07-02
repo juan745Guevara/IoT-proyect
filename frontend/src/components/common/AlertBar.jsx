@@ -1,27 +1,45 @@
-const UMBRALES = {
-  temperatura: { max: 35, label: "Temperatura alta" },
-  humedad_suelo: { min: 40, label: "Humedad del suelo baja" },
-  humedad_aire: { min: 40, label: "Humedad del aire baja" },
+const UMBRALES_DEFAULT = {
+  temperatura_max: 35,
+  humedad_aire_min: 40,
+  humedad_suelo_min: 30,
+  luminosidad_min: 20,
 };
 
-export default function AlertBar({ sensores }) {
+export default function AlertBar({ sensores, umbrales = UMBRALES_DEFAULT }) {
   if (!sensores) return null;
 
   const alertas = [];
 
-  if (sensores.temperatura != null && sensores.temperatura > UMBRALES.temperatura.max) {
+  if (
+    sensores.temperatura != null &&
+    sensores.temperatura > umbrales.temperatura_max
+  ) {
     alertas.push(
-      `Temperatura alta (${Number(sensores.temperatura).toFixed(1)}°C — máx ${UMBRALES.temperatura.max}°C)`
+      `Temperatura alta (${Number(sensores.temperatura).toFixed(1)}°C — máx ${umbrales.temperatura_max}°C)`
     );
   }
-  if (sensores.humedad_suelo != null && sensores.humedad_suelo < UMBRALES.humedad_suelo.min) {
+  if (
+    sensores.humedad_suelo != null &&
+    sensores.humedad_suelo < umbrales.humedad_suelo_min
+  ) {
     alertas.push(
-      `Humedad del suelo baja (${Math.round(sensores.humedad_suelo)}% — mín ${UMBRALES.humedad_suelo.min}%)`
+      `Humedad del suelo baja (${Math.round(sensores.humedad_suelo)}% — mín ${umbrales.humedad_suelo_min}%)`
     );
   }
-  if (sensores.humedad_aire != null && sensores.humedad_aire < UMBRALES.humedad_aire.min) {
+  if (
+    sensores.humedad_aire != null &&
+    sensores.humedad_aire < umbrales.humedad_aire_min
+  ) {
     alertas.push(
-      `Humedad del aire baja (${Math.round(sensores.humedad_aire)}% — mín ${UMBRALES.humedad_aire.min}%)`
+      `Humedad del aire baja (${Math.round(sensores.humedad_aire)}% — mín ${umbrales.humedad_aire_min}%)`
+    );
+  }
+  if (
+    sensores.luminosidad != null &&
+    sensores.luminosidad < umbrales.luminosidad_min
+  ) {
+    alertas.push(
+      `Luminosidad baja (${Math.round(sensores.luminosidad)}% — mín ${umbrales.luminosidad_min}%)`
     );
   }
 

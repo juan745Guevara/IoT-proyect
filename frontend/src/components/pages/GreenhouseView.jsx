@@ -34,7 +34,7 @@ export default function GreenhouseView({ sensores, actuadores }) {
         <div className="gh-visual">
           <img
             src="/greenhouse.jpg"
-            alt="Invernadero inteligente con plantas, ventiladores y sistema de riego"
+            alt="Invernadero inteligente con plantas, ventilación y riego"
             className="gh-img"
             onError={(e) => {
               if (!e.target.dataset.fallback) {
